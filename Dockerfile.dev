@@ -1,0 +1,30 @@
+FROM node:20-slim
+
+WORKDIR /ui
+
+# # Install dependencies based on the preferred package manager
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
+RUN \
+    if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+    elif [ -f package-lock.json ]; then npm ci; \
+    elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
+    else echo "Lockfile not found." && exit 1; \
+    fi
+
+# add node modules to the path
+ENV PATH /ui/node_modules/.bin:$PATH
+
+COPY app ./app
+COPY public ./public
+COPY next.config.ts .
+COPY tsconfig.json .
+
+# # Start Next.js in development mode based on the preferred package manager
+CMD \
+    if [ -f yarn.lock ]; then yarn dev; \
+    elif [ -f package-lock.json ]; then npm run dev; \
+    elif [ -f pnpm-lock.yaml ]; then pnpm dev; \
+    else npm run dev; \
+    fi
+
+
